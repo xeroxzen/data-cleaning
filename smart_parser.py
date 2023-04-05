@@ -7,6 +7,7 @@ import argparse
 import os
 import pandas as pd
 import re
+from fuzzywuzzy import fuzz, process
 
 
 def excel_to_csv(excel_file):
@@ -51,6 +52,19 @@ def clean_csv(csv_file):
     # Fill missing fields with data from duplicates as long as the 'Brand' column is the same, as was specified in 
     # the task
     df = df.groupby('Brand').apply(lambda x: x.ffill().bfill())
+
+    # Fuzzy matching for non-telling duplicates
+    brand_set = set(df['Brand'].tolist())
+    for brand in brand_set:
+        matches = process.extract(brand, brand_set, scorer=fuzz.partial_ratio, limit=None)
+        for match in matches:
+            if match[1] >= 90 and match[0] != brand:
+                df.loc[df['Brand'] == match[0], 'Brand'] = brand
+
+    # Save the cleaned dataframe to a new CSV file
+    cleaned_file = os.path.splitext(csv_file)[0] + '_cleaned.csv'
+    df.to_csv(cleaned_file, index=False)
+    print("Cleaned CSV file")
 
     # Save the cleaned dataframe to a new CSV file
     assert isinstance(csv_file, object)
