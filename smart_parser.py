@@ -17,8 +17,8 @@ def excel_to_csv(excel_file):
         csv_file = os.path.splitext(excel_file)[0] + '_converted.csv'
         df.to_csv(csv_file, index=False)
         print("Converted Excel file to CSV file")
-    except Exception as e:
-        print(f"Error occurred while converting Excel file to CSV: {str(e)}")
+    except Exception as err:
+        print(f"Error occurred while converting Excel file to CSV: {str(err)}")
 
 
 def clean_csv(csv_file):
@@ -68,8 +68,8 @@ def csv_to_excel(csv_file):
         excel_file = os.path.splitext(csv_file)[0] + '_converted_back_to.xlsx'
         df.to_excel(excel_file, index=False)
         print("Converted CSV file to Excel file")
-    except Exception as e:
-        print(f"Error occurred while converting CSV file to Excel: {str(e)}")
+    except Exception as err:
+        print(f"Error occurred while converting CSV file to Excel: {str(err)}")
 
 
 if __name__ == '__main__':
@@ -99,4 +99,3 @@ if __name__ == '__main__':
             parser.print_help()
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
