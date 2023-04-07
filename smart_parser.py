@@ -59,6 +59,19 @@ def clean_csv(csv_file):
     # the task
     df = df.groupby('Brand').apply(lambda x: x.ffill().bfill())
 
+    # Fuzzy matching for non-telling duplicates
+    brand_set = set(df['Brand'].tolist())
+    for brand in brand_set:
+        matches = process.extract(brand, brand_set, scorer=fuzz.partial_ratio, limit=None)
+        for match in matches:
+            if match[1] >= 90 and match[0] != brand:
+                df.loc[df['Brand'] == match[0], 'Brand'] = brand
+
+    # Save the cleaned dataframe to a new CSV file
+    cleaned_file = os.path.splitext(csv_file)[0] + '_cleaned.csv'
+    df.to_csv(cleaned_file, index=False)
+    print("Cleaned CSV file")
+
     # Save the cleaned dataframe to a new CSV file
     assert isinstance(csv_file, object)
     cleaned_file = os.path.splitext(csv_file)[0] + '_cleaned.csv'
@@ -71,27 +84,12 @@ def csv_to_excel(csv_file):
         # Load the CSV file into a Pandas dataframe
         df = pd.read_csv(csv_file)
 
-        # Add '%' symbol to Alcohol_Content column for values that don't have it
-        df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: str(x)+'%' if isinstance(x, str) and not x.endswith('%') else x)
-
-        # Highlight rows with fuzzy matches in the 'Brand' column
-        brand_set = set(df['Brand'].tolist())
-        fuzzy_matches = []
-        for brand in brand_set:
-            matches = process.extract(brand, brand_set, scorer=fuzz.partial_ratio, limit=None)
-            for match in matches:
-                if match[1] >= 90 and match[0] != brand:
-                    fuzzy_matches.append(match[0])
-        df['is_fuzzy_match'] = df['Brand'].isin(fuzzy_matches)
-        df = df.style.apply(lambda x: ['background-color: yellow' if x['is_fuzzy_match'] else '' for i in x], axis=1).hide_columns(['is_fuzzy_match'])
-
         # Save the dataframe to a new Excel file
         excel_file = os.path.splitext(csv_file)[0] + '_converted_back_to.xlsx'
         df.to_excel(excel_file, index=False)
         print("Converted CSV file to Excel file")
     except Exception as err:
         print(f"Error occurred while converting CSV file to Excel: {str(err)}")
-
 
 
 if __name__ == '__main__':
