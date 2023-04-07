@@ -15,6 +15,13 @@ def excel_to_csv(excel_file):
         # Load the Excel file into a Pandas dataframe
         df = pd.read_excel(excel_file)
 
+        # remove non-numeric characters from Alcohol_Content column
+        df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: re.sub('[^0-9\.]+', '', str(x)))
+        
+        # Sanitize Alcohol_Content column
+        df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: str(x).replace(',', '.') if isinstance(x, str) else x)
+        df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: float(x[:-1]) if isinstance(x, str) and x.endswith('%') else x)
+
         csv_file = os.path.splitext(excel_file)[0] + '_converted.csv'
         df.to_csv(csv_file, index=False)
         print("Converted Excel file to CSV file")
@@ -44,12 +51,11 @@ def clean_csv(csv_file):
         else:
             return x
 
-    # df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: str(int(float(x.replace(',', '.'))*100))+'%' if 
-    # ',' in str(x) else str(x))
+
     df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: re.findall(r'\d+\.\d+', str(x))[0] if re.findall(r'\d+\.\d+', str(x)) else str(x))
     df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: str(int(float(x)*100))+'%' if '.' in str(x) else str(x))
 
-    # Fill missing fields with data from duplicates as long as the 'Brand' column is the same, as was specified in 
+    # Fill missing fields with data from duplicates as long as the 'Brand' column is the same, as was specified in
     # the task
     df = df.groupby('Brand').apply(lambda x: x.ffill().bfill())
 
@@ -64,6 +70,9 @@ def csv_to_excel(csv_file):
     try:
         # Load the CSV file into a Pandas dataframe
         df = pd.read_csv(csv_file)
+
+        # Add '%' symbol to Alcohol_Content column for values that don't have it
+        df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: str(x)+'%' if isinstance(x, str) and not x.endswith('%') else x)
 
         # Highlight rows with fuzzy matches in the 'Brand' column
         brand_set = set(df['Brand'].tolist())
