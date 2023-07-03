@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import re
 from fuzzywuzzy import fuzz, process
+import difflib
 
 
 def excel_to_csv(excel_file):
@@ -72,18 +73,35 @@ def remove_duplicates(excel_file):
     try:
         df = pd.read_excel(excel_file)
 
-        pattern = r'(?i)\b((\d+°?\s*EAST)?\s*Hyōgo\s*(?:Dry\s*)?(?:Gin|Black Edition Gin)?\s*(?:\d+x\s*\d+\s*Tonic Water)?)\b|\b((\d+)\s*James\s*E\.\s*Pepper\s*Straight\s*(?:Whiskey|Rye|Bourbon)\s*\d*\s*(Proof)?)\b'
+        threshold = 0.8  # 80% match threshold
 
-        df['Pattern'] = df['Brand'].apply(lambda x: re.findall(
-            pattern, x)[0] if re.findall(pattern, x) else x)
+        # Function to check if a brand is a duplicate based on a 40% name match
+        def is_duplicate(brand, unique_brands):
+            for unique_brand in unique_brands:
+                similarity = difflib.SequenceMatcher(
+                    None, brand, unique_brand).ratio()
+                if similarity >= threshold:
+                    return True
+            return False
 
-        df = df.drop_duplicates(subset='Pattern')
+        unique_brands = []
+        duplicate_indices = []
 
-        df = df.drop(columns=['Pattern'])
+        # Iterate through the DataFrame and identify duplicates
+        for i, row in df.iterrows():
+            brand = row['Brand']
+            if is_duplicate(brand, unique_brands):
+                duplicate_indices.append(i)
+            else:
+                unique_brands.append(brand)
+
+        # Drop duplicate rows from the DataFrame
+        df_cleaned = df.drop(duplicate_indices)
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_cleaned.xlsx'
-        df.to_excel(cleaned_file, index=False)
+        df_cleaned.to_excel(cleaned_file, index=False)
         print("Removed duplicates from Excel file")
+
     except Exception as err:
         print(
             f"Error occurred while removing duplicates from Excel file: {str(err)}")
