@@ -33,11 +33,8 @@ def clean_csv(csv_file):
     # Remove empty columns
     df = df.dropna(axis=1, how='all')
 
-   # Extract key information using regular expressions
-    df['Pattern'] = df['Brand'].apply(lambda x: re.sub(r'\d+', '', x.lower()))
-
-    # Remove duplicates based on the pattern column and keep the first occurrence
-    df = df.drop_duplicates(subset='Pattern')
+    # Remove duplicates based on the 'Brand' column and keep the row with the longest description
+    df = df.sort_values('Text', key=lambda col: col.str.len(), ascending=False).drop_duplicates('Brand').reset_index(drop=True)
 
     # Convert 'Alcohol_Content' column values to percentages
     # Unused, ideally this was to be used to convert values like '12,5%' to '12.5%'
