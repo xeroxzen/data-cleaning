@@ -13,7 +13,6 @@ import difflib
 
 def excel_to_csv(excel_file):
     try:
-        # Load the Excel file into a Pandas dataframe
         df = pd.read_excel(excel_file)
 
         csv_file = os.path.splitext(excel_file)[0] + '_converted.csv'
@@ -73,9 +72,8 @@ def remove_duplicates(excel_file):
     try:
         df = pd.read_excel(excel_file)
 
-        threshold = 0.8  # 80% match threshold
+        threshold = 0.7  # 70% match threshold... change this to a threshold of your choice
 
-        # Function to check if a brand is a duplicate based on a 40% name match
         def is_duplicate(brand, unique_brands):
             for unique_brand in unique_brands:
                 similarity = difflib.SequenceMatcher(
@@ -87,7 +85,6 @@ def remove_duplicates(excel_file):
         unique_brands = []
         duplicate_indices = []
 
-        # Iterate through the DataFrame and identify duplicates
         for i, row in df.iterrows():
             brand = row['Brand']
             if is_duplicate(brand, unique_brands):
@@ -95,7 +92,6 @@ def remove_duplicates(excel_file):
             else:
                 unique_brands.append(brand)
 
-        # Drop duplicate rows from the DataFrame
         df_cleaned = df.drop(duplicate_indices)
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_cleaned.xlsx'
