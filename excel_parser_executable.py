@@ -25,7 +25,7 @@ def clean_excel(excel_file):
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_cleaned.xlsx'
         df.to_excel(cleaned_file, index=False)
-        print("Cleaned Excel file")
+        print(f"Cleaned Excel file: {cleaned_file}")
 
     except Exception as err:
         print(
@@ -49,7 +49,7 @@ def remove_duplicates(excel_file):
         unique_brands = []
         duplicate_indices = []
 
-        for i, row in tqdm(df.iterrows(), total=len(df), desc="Processing"):
+        for i, row in tqdm(df.iterrows(), total=len(df), desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
             brand = row['Brand']
             if is_duplicate(brand, unique_brands):
                 duplicate_indices.append(i)
@@ -60,7 +60,7 @@ def remove_duplicates(excel_file):
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_rmdup.xlsx'
         df_cleaned.to_excel(cleaned_file, index=False)
-        print("Removed duplicates from Excel file")
+        print(f"Removed duplicates from Excel file: {cleaned_file}")
 
     except Exception as err:
         print(
@@ -70,8 +70,10 @@ def remove_duplicates(excel_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Excel cleaning tool')
 
-    parser.add_argument('--clean', action='store_true', help='clean an Excel file or directory')
-    parser.add_argument('--rd', action='store_true', help='remove duplicates from Excel file or directory')
+    parser.add_argument('--clean', action='store_true',
+                        help='clean an Excel file or directory')
+    parser.add_argument('--rd', action='store_true',
+                        help='remove duplicates from Excel file or directory')
 
     args = parser.parse_args()
 
@@ -81,15 +83,16 @@ if __name__ == '__main__':
             if os.path.isfile(path):
                 file_list = [path]
             elif os.path.isdir(path):
-                file_list = [os.path.join(path, file) for file in os.listdir(path) if file.endswith('.xlsx')]
+                file_list = [os.path.join(path, file) for file in os.listdir(
+                    path) if file.endswith('.xlsx')]
             else:
                 print(f"Error: Path '{path}' not found.")
                 exit(1)
-            
+
             original_dir = os.path.join(os.getcwd(), 'originals')
             os.makedirs(original_dir, exist_ok=True)
 
-            for file in file_list:
+            for file in tqdm(file_list, desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
                 shutil.move(file, original_dir)
                 clean_excel(os.path.join(original_dir, os.path.basename(file)))
         elif args.rd:
@@ -97,7 +100,8 @@ if __name__ == '__main__':
             if os.path.isfile(path):
                 file_list = [path]
             elif os.path.isdir(path):
-                file_list = [os.path.join(path, file) for file in os.listdir(path) if file.endswith('.xlsx')]
+                file_list = [os.path.join(path, file) for file in os.listdir(
+                    path) if file.endswith('.xlsx')]
             else:
                 print(f"Error: Path '{path}' not found.")
                 exit(1)
@@ -105,9 +109,10 @@ if __name__ == '__main__':
             original_dir = os.path.join(os.getcwd(), 'originals')
             os.makedirs(original_dir, exist_ok=True)
 
-            for file in file_list:
+            for file in tqdm(file_list, desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
                 shutil.move(file, original_dir)
-                remove_duplicates(os.path.join(original_dir, os.path.basename(file)))
+                remove_duplicates(os.path.join(
+                    original_dir, os.path.basename(file)))
         else:
             parser.print_help()
     except Exception as e:
