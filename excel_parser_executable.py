@@ -5,6 +5,22 @@ import re
 import difflib
 import shutil
 from tqdm import tqdm
+from colorama import init, Fore, Style
+
+# Initialize Colorama
+init()
+
+print(Fore.GREEN + Style.BRIGHT + """
+██████╗ ██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗██████╗ 
+██╔══██╗██║ ██╔╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗
+██████╔╝█████╔╝    ██║   ██║   ██║██████╔╝█████╗  ██████╔╝
+██╔═══╝ ██╔═██╗    ██║   ██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗
+██║     ██║  ██╗   ██║   ╚██████╔╝██║     ███████╗██║  ██║
+╚═╝     ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝
+
+                    EXCELParser+
+              Andile Jaden Mbele aka Google Jr
+""" + Style.RESET_ALL)
 
 
 def clean_excel(excel_file):
