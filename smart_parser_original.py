@@ -23,22 +23,19 @@ def excel_to_csv(excel_file):
 
 
 def clean_csv(csv_file):
-    try:
-        df = pd.read_csv(csv_file)
-    except FileNotFoundError:
-        print(f"Error: {csv_file} not found")
-        return
+    df = pd.read_csv(csv_file)
 
     df = df.dropna(axis=1, how='all')
 
-    pattern = r'(?i)\b((\d+°?\s*EAST)?\s*Hyōgo\s*(?:Dry\s*)?(?:Gin|Black Edition Gin)?\s*(?:\d+x\s*\d+\s*Tonic Water)?)\b|\b((\d+)\s*James\s*E\.\s*Pepper\s*Straight\s*(?:Whiskey|Rye|Bourbon)\s*\d*\s*(Proof)?)\b'
+    df = df.sort_values('Text', key=lambda col: col.str.len(
+    ), ascending=False).drop_duplicates('Brand').reset_index(drop=True)
 
-    df['Pattern'] = df['Brand'].apply(lambda x: re.findall(
-        pattern, x)[0] if re.findall(pattern, x) else x)
+    df['Alcohol_Content'] = df['Alcohol_Content'].apply(lambda x: re.findall(
+        r'\d+\.\d+', str(x))[0] if re.findall(r'\d+\.\d+', str(x)) else str(x))
+    df['Alcohol_Content'] = df['Alcohol_Content'].apply(
+        lambda x: str(int(float(x)*100))+'%' if '.' in str(x) else str(x))
 
-    df = df.drop_duplicates(subset='Pattern')
-
-    df = df.drop(columns=['Pattern'])
+    df = df.groupby('Brand').apply(lambda x: x.ffill().bfill())
 
     cleaned_file = os.path.splitext(csv_file)[0] + '_cleaned.csv'
     df.to_csv(cleaned_file, index=False)
@@ -48,18 +45,6 @@ def clean_csv(csv_file):
 def csv_to_excel(csv_file):
     try:
         df = pd.read_csv(csv_file)
-
-        brand_set = set(df['Brand'].tolist())
-        fuzzy_matches = []
-        for brand in brand_set:
-            matches = process.extract(
-                brand, brand_set, scorer=fuzz.partial_ratio, limit=None)
-            for match in matches:
-                if match[1] >= 90 and match[0] != brand:
-                    fuzzy_matches.append(match[0])
-        df['is_fuzzy_match'] = df['Brand'].isin(fuzzy_matches)
-        df = df.style.apply(lambda x: ['background-color: yellow' if x['is_fuzzy_match']
-                            else '' for i in x], axis=1).hide_columns(['is_fuzzy_match'])
 
         excel_file = os.path.splitext(csv_file)[0] + '_converted_back_to.xlsx'
         df.to_excel(excel_file, index=False)
