@@ -68,7 +68,11 @@ def remove_duplicates(excel_file):
         for i, row in tqdm(df.iterrows(), total=len(df), desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
             brand = row['Brand']
             if is_duplicate(brand, unique_brands):
-                duplicate_indices.append(i)
+                # Update the existing unique row with data from duplicates
+                unique_row = df.loc[unique_brands.index(brand)]
+                for col in df.columns:
+                    if pd.isnull(unique_row[col]) and not pd.isnull(row[col]):
+                        unique_row[col] = row[col]
             else:
                 unique_brands.append(brand)
 
@@ -81,6 +85,7 @@ def remove_duplicates(excel_file):
     except Exception as err:
         print(
             f"Error occurred while removing duplicates from Excel file: {str(err)}")
+
 
 
 if __name__ == '__main__':
