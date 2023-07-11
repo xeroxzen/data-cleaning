@@ -95,12 +95,18 @@ if __name__ == '__main__':
                         help='clean an Excel file or directory')
     parser.add_argument('--rd', action='store_true',
                         help='remove duplicates from Excel file or directory')
+    parser.add_argument('path', metavar='PATH', type=str, nargs='?',
+                        help='path to the Excel file or directory')
 
     args = parser.parse_args()
 
     try:
         if args.clean:
-            path = input("Enter the path to the Excel file or directory: ")
+            path = args.path
+            if not path:
+                print("Error: No path specified.")
+                exit(1)
+
             if os.path.isfile(path):
                 file_list = [path]
             elif os.path.isdir(path):
@@ -117,7 +123,11 @@ if __name__ == '__main__':
                 shutil.move(file, original_dir)
                 clean_excel(os.path.join(original_dir, os.path.basename(file)))
         elif args.rd:
-            path = input("Enter the path to the Excel file or directory: ")
+            path = args.path
+            if not path:
+                print("Error: No path specified.")
+                exit(1)
+
             if os.path.isfile(path):
                 file_list = [path]
             elif os.path.isdir(path):
@@ -138,3 +148,4 @@ if __name__ == '__main__':
             parser.print_help()
     except Exception as e:
         print(f"An error occurred: {str(e)}")
+
