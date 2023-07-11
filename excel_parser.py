@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import re
 import difflib
+from tqdm import tqdm
 
 
 def clean_excel(excel_file):
@@ -39,7 +40,7 @@ def remove_duplicates(excel_file):
         def is_duplicate(brand, unique_brands):
             for unique_brand in unique_brands:
                 similarity = difflib.SequenceMatcher(
-                    None, brand, unique_brand).ratio()
+                    None, brand.strip(), unique_brand.strip()).ratio()
                 if similarity >= threshold:
                     return True
             return False
@@ -47,22 +48,36 @@ def remove_duplicates(excel_file):
         unique_brands = []
         duplicate_indices = []
 
-        for i, row in df.iterrows():
+        for i, row in tqdm(df.iterrows(), total=len(df), desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
             brand = row['Brand']
             if is_duplicate(brand, unique_brands):
-                duplicate_indices.append(i)
+                # Get the index of the existing unique row
+                unique_index = unique_brands.index(brand.strip())
+                # Update the existing unique row with data from duplicates
+                unique_row = df.loc[unique_index]
+                for col in df.columns:
+                    if pd.isnull(unique_row[col]) and not pd.isnull(row[col]):
+                        unique_row[col] = row[col]
             else:
-                unique_brands.append(brand)
+                unique_brands.append(brand.strip())
+                # Get the index of the newly added unique row
+                unique_index = unique_brands.index(brand.strip())
+                # Update the corresponding row in duplicate_indices list
+                for idx, duplicate_idx in enumerate(duplicate_indices):
+                    if duplicate_idx > unique_index:
+                        duplicate_indices[idx] += 1
 
         df_cleaned = df.drop(duplicate_indices)
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_rmdup.xlsx'
         df_cleaned.to_excel(cleaned_file, index=False)
-        print("Removed duplicates from Excel file")
+        print(f"Removed duplicates from Excel file: {cleaned_file}")
 
     except Exception as err:
         print(
             f"Error occurred while removing duplicates from Excel file: {str(err)}")
+
+
 
 
 if __name__ == '__main__':
