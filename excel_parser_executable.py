@@ -10,16 +10,16 @@ from colorama import init, Fore, Style
 # Initialize Colorama
 init()
 
-print(Fore.GREEN + Style.BRIGHT + """
-██████╗ ██╗  ██╗████████╗ ██████╗ ██████╗ ███████╗██████╗ 
-██╔══██╗██║ ██╔╝╚══██╔══╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗
-██████╔╝█████╔╝    ██║   ██║   ██║██████╔╝█████╗  ██████╔╝
-██╔═══╝ ██╔═██╗    ██║   ██║   ██║██╔═══╝ ██╔══╝  ██╔══██╗
-██║     ██║  ██╗   ██║   ╚██████╔╝██║     ███████╗██║  ██║
-╚═╝     ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═╝
+print(Fore.RED + Style.BRIGHT + """
+                      _____                           
+                     | __  \                          _   
+                     | |__) |_ _ _ __ ___  ___ _ __ _| |_ 
+                     |  ___/ _` | '__/ __|/ _ \ '__|_   _|
+                     | |  | (_| | |  \__ \  __/ |    |_|  
+                     |_|   \__,_|_|  |___/\___|_|         
 
-                    EXCELParser+
-              Andile Jaden Mbele aka Google Jr
+                {Fore.RESET}by:{Fore.RED} Andile Jaden Mbele (xeroxzen) {Fore.RESET}
+                            Version: {Fore.RED}0.3{Fore.RESET}
 """ + Style.RESET_ALL)
 
 
@@ -43,6 +43,12 @@ def clean_excel(excel_file):
         df.to_excel(cleaned_file, index=False)
         print(f"Cleaned Excel file: {cleaned_file}")
 
+        # Move the original file to 'originals' folder
+        original_dir = os.path.join(os.getcwd(), 'originals')
+        os.makedirs(original_dir, exist_ok=True)
+        shutil.move(excel_file, os.path.join(
+            original_dir, os.path.basename(excel_file)))
+
     except Exception as err:
         print(
             f"Error occurred while cleaning Excel file: {str(err)}")
@@ -57,7 +63,7 @@ def remove_duplicates(excel_file):
         def is_duplicate(brand, unique_brands):
             for unique_brand in unique_brands:
                 similarity = difflib.SequenceMatcher(
-                    None, brand, unique_brand).ratio()
+                    None, brand.strip(), unique_brand.strip()).ratio()
                 if similarity >= threshold:
                     return True
             return False
@@ -68,15 +74,12 @@ def remove_duplicates(excel_file):
         for i, row in tqdm(df.iterrows(), total=len(df), desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
             brand = row['Brand']
             if is_duplicate(brand, unique_brands):
-                # Update the existing unique row with data from duplicates
-                unique_row = df.loc[unique_brands.index(brand)]
-                for col in df.columns:
-                    if pd.isnull(unique_row[col]) and not pd.isnull(row[col]):
-                        unique_row[col] = row[col]
+                if brand.strip() not in duplicate_indices:
+                    duplicate_indices.append(brand.strip())
             else:
-                unique_brands.append(brand)
+                unique_brands.append(brand.strip())
 
-        df_cleaned = df.drop(duplicate_indices)
+        df_cleaned = df[~df['Brand'].isin(duplicate_indices)]
 
         cleaned_file = os.path.splitext(excel_file)[0] + '_rmdup.xlsx'
         df_cleaned.to_excel(cleaned_file, index=False)
@@ -87,7 +90,6 @@ def remove_duplicates(excel_file):
             f"Error occurred while removing duplicates from Excel file: {str(err)}")
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Excel cleaning tool')
 
@@ -95,8 +97,8 @@ if __name__ == '__main__':
                         help='clean an Excel file or directory')
     parser.add_argument('--rd', action='store_true',
                         help='remove duplicates from Excel file or directory')
-    parser.add_argument('path', metavar='PATH', type=str, nargs='?',
-                        help='path to the Excel file or directory')
+    parser.add_argument('path', metavar='PATH', type=str,
+                        nargs='?', help='path to the Excel file')
 
     args = parser.parse_args()
 
@@ -108,20 +110,14 @@ if __name__ == '__main__':
                 exit(1)
 
             if os.path.isfile(path):
-                file_list = [path]
+                with tqdm(total=1, desc="Cleaning File", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green') as pbar:
+                    clean_excel(path)
+                    pbar.update(1)
             elif os.path.isdir(path):
                 file_list = [os.path.join(path, file) for file in os.listdir(
                     path) if file.endswith('.xlsx')]
-            else:
-                print(f"Error: Path '{path}' not found.")
-                exit(1)
-
-            original_dir = os.path.join(os.getcwd(), 'originals')
-            os.makedirs(original_dir, exist_ok=True)
-
-            for file in tqdm(file_list, desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
-                shutil.move(file, original_dir)
-                clean_excel(os.path.join(original_dir, os.path.basename(file)))
+                for file in tqdm(file_list, desc="Cleaning Files", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
+                    clean_excel(os.path.join.join(path, file))
         elif args.rd:
             path = args.path
             if not path:
@@ -129,23 +125,12 @@ if __name__ == '__main__':
                 exit(1)
 
             if os.path.isfile(path):
-                file_list = [path]
+                remove_duplicates(path)
             elif os.path.isdir(path):
-                file_list = [os.path.join(path, file) for file in os.listdir(
-                    path) if file.endswith('.xlsx')]
-            else:
-                print(f"Error: Path '{path}' not found.")
-                exit(1)
-
-            original_dir = os.path.join(os.getcwd(), 'originals')
-            os.makedirs(original_dir, exist_ok=True)
-
-            for file in tqdm(file_list, desc="Processing", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]", colour='green'):
-                shutil.move(file, original_dir)
-                remove_duplicates(os.path.join(
-                    original_dir, os.path.basename(file)))
+                for file in os.listdir(path):
+                    if file.endswith('.xlsx'):
+                        remove_duplicates(os.path.join(path, file))
         else:
             parser.print_help()
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
